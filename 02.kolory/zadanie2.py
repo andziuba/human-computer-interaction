@@ -5,28 +5,34 @@ from matplotlib import rc
 import numpy as np
 import math as m
 
-# Funkcja rysująca mapę
+#mapa
 def drawMap(mapa,nazwaPliku):
     fig = plt.figure()
     plt.imshow(mapa)
     plt.show()
     fig.savefig(nazwaPliku)
 
-# Wczytywanie punktów na mapie oraz wyskości, szerokości mapy i dystansu między punktami
+#wczytywanie danych
 def loadMapPoints(fileName):
     with open(fileName) as file:
         mapa = file.read().splitlines()
     mapa = [i.split(' ') for i in mapa]
-    mapHeight= int(mapa[0][0]) # wysokość mapy
-    mapWidth = int(mapa[0][1]) # szerokość mapy
-    distance = int(mapa[0][2]) # dystans pomiędzy punktami
+    mapHeight= int(mapa[0][0]) #wysokosc mapy
+    mapWidth = int(mapa[0][1]) #szerokosc mapy
+    distance = int(mapa[0][2]) #dystans pomiedzy punktami
     del mapa[0]
     for i in range(len(mapa)):
         del mapa[i][-1]
-        mapa[i] = [ float(point) for point in mapa[i]] # Zamiana łańcucha znaków na float
+        mapa[i] = [ float(point) for point in mapa[i]]
     return mapa,mapWidth,mapHeight,distance
 
-# Tworzenie macierzy kolorów HSV
+def loadMap(plik):
+    with open(plik, 'r') as f:
+        mapWidth, mapHeight, distance = map(int, f.readline().split())
+        mapa = np.array([list(map(float, f.readline().split())) for _ in range(mapHeight)])
+    return mapa, mapWidth, mapHeight, distance
+
+#tworzenie macierzy HSV
 def createHSVmatrix(mapHeight,mapWidth):
     hsvMatrix = []
     for i in range(mapHeight):
@@ -37,53 +43,104 @@ def createHSVmatrix(mapHeight,mapWidth):
 
 
 def hsv2rgb(h, s, v):
-    vs = v*s
-    if h > 0:
-        while h > 360:
-            h -= 360
+    c = v * s
+    x = c * (1 - abs((h / 60) % 2 - 1))
+    m = v - c
+
+    if 0 <= h < 60:
+        r, g, b = c, x, 0
+    elif 60 <= h < 120:
+        r, g, b = x, c, 0
+    elif 120 <= h < 180:
+        r, g, b = 0, c, x
+    elif 180 <= h < 240:
+        r, g, b = 0, x, c
+    elif 240 <= h < 300:
+        r, g, b = x, 0, c
+    elif 300 <= h < 360:
+        r, g, b = c, 0, x
     else:
-        while h < 0:
-            h += 360
-    hue = h/60
-    x = vs * (1 - abs((hue % 2) -1))
-    # W zależności od tego w jakiej cześci okręgu się znajduje kolor
-    switcher = {
-        0: [vs,x,0],
-        1: [x,vs,0],
-        2: [0,vs,x],
-        3: [0,x,vs],
-        4: [x,0,vs],
-        5: [vs,0,x],
-        6: [vs,x,0]
-    }
-    rgb = switcher.get(m.trunc(hue),[0,0,0])
-    match = v-vs
-    rgb = [i+match for i in rgb]
-    return rgb
+        r, g, b = 0, 0, 0
+
+    return [r + m, g + m, b + m]
 
 
-def simpleShading(mapa,mapHeight,mapWidth,distance):
-    minimum = np.min(mapa)  # Minimum wysokości potrzebne do normalizacji
-    maximum = np.max(mapa) - minimum# Maximum wyskokości potrzebne do normalizacji
-    mapaHSV = createHSVmatrix(mapHeight, mapWidth)  # Macierz, która jest uzupełniana kolorami HSV na podstawie obliczeń
+def calculateVectors(mapa, i, j, mapWidth, distance, mainPoint):
+    if i % 2 == 0:
+        if j < mapWidth-1:
+            secondPoint = np.array([i*distance,mapa[i][j+1],distance*(j+1)]) #drugi punkt trojkata
+            thirdPoint = np.array([(i+1)*distance,mapa[i+1][j],j*distance]) #trzeci punkt trojkata
+        else:
+            secondPoint = np.array([i * distance, mapa[i][j - 1], distance * (j - 1)])
+            thirdPoint = np.array([(i + 1) * distance, mapa[i + 1][j], j * distance])
+    else:
+        if j > 0:
+            secondPoint = np.array([i*distance,mapa[i][j-1],(j-1)*distance])
+            thirdPoint = np.array([(i-1)*distance,mapa[i-1][j],j*distance])
+        else:
+            secondPoint = np.array([i * distance, mapa[i][j + 1], (j + 1) * distance])
+            thirdPoint = np.array([(i - 1) * distance, mapa[i - 1][j], j * distance])
+
+
+    normal = np.cross(secondPoint - mainPoint, thirdPoint - mainPoint) #wektor normalny powierzchni
+    return normal
+
+def calculateVectorSun(mainPoint, disntance):
+    sun = np.array([-distance, 50, -distance])
+    vectorToSun = sun - mainPoint
+
+    return vectorToSun
+    
+
+def vectorShading(mapa, mapHeight, mapWidth, distance):
+    minimum = np.min(mapa) #min wysokosci do normalizacji
+    maximum = np.max(mapa) - minimum #max wyskokosci do normalizacji
+    mapaHSV = createHSVmatrix(mapHeight,mapWidth) #macierz wypelniona kolorami hsv
+    matrixOfAngles = np.zeros([mapHeight,mapWidth]) #macierz katow miedzy sloncem a wektorem normalnym powierzchni
+    
     for i in range(mapHeight):
         for j in range(mapWidth):
-            # Obliczanie koloru między zielonym (120 - hue) a czerwonym (0)
-            mapaHSV[i][j][0] = (1 - ((mapa[i][j] - minimum) / maximum)) * 120
-            if j == 0:
-                div = mapa[i][j] - mapa[i][j+1] # Różnica między wysokością punktu a jego prawym sąsiadem
+            mainPoint = np.array([i*distance,mapa[i][j],j*distance])
+            normal = calculateVectors(mapa, i, j, mapWidth, distance, mainPoint)
+            vectorToSun = calculateVectorSun(mainPoint, distance)
+
+            #obliczanie kata miedzy wektorem normalnym i wektorem slonca
+            angleSun = m.degrees(np.arccos(np.clip(np.dot(normal, vectorToSun)/(np.linalg.norm(normal)*np.linalg.norm(vectorToSun)),-1,1)))
+            matrixOfAngles[i][j] = angleSun
+
+    #posortowana lista katow dla lepszego cieniowania
+    angles = np.sort(np.reshape(matrixOfAngles,-1))
+    minAngle = np.min(angles)
+    maxAngle = np.max(angles)
+
+    #okreslanie stopnia przyciemnienia
+    for i in range(mapHeight):
+        for j in range(mapWidth):
+            mapaHSV[i][j][0] = (1-((mapa[i][j]-minimum)/maximum)) * 120 #obliczenie odcienia
+
+            normalized = ((matrixOfAngles[i][j]-minAngle)/(maxAngle-minAngle))*2 - 1  #w zakresie <-1,1>
+            position = np.where(angles == matrixOfAngles[i][j])[0] #odchylenie kata od pozostalych
+            position = position[0] / len(angles)
+
+            #okreslenie s, v
+            div = position - 0.5 
+            if div < 0:
+                mapaHSV[i][j][1] = 1 -np.sin(matrixOfAngles[i][j])*abs(div)
             else:
-                div = mapa[i][j] - mapa[i][j-1] # Różnica między wysokością punktu a jego lewym sąsiadem
-            div = div*7 / maximum
-            if div > 0:
-                mapaHSV[i][j][1] -= abs(div)
+                mapaHSV[i][j][2] = 1 - np.sin(matrixOfAngles[i][j])*abs(div)
+
+            #normalizowanie kata
+            if normalized < 0:
+                mapaHSV[i][j][1] = ((1+normalized) + mapaHSV[i][j][1])/2
             else:
-                mapaHSV[i][j][2] -= abs(div)
-            mapaHSV[i][j] = hsv2rgb(mapaHSV[i][j][0], mapaHSV[i][j][1], mapaHSV[i][j][2])
+                mapaHSV[i][j][2] = ((1-normalized) + mapaHSV[i][j][2])/2
+            
+            mapaHSV[i][j] = hsv2rgb(mapaHSV[i][j][0],mapaHSV[i][j][1],mapaHSV[i][j][2])
+    
     return mapaHSV
 
-if __name__ == '__main__':
-    mapa, mapHeight, mapWidth, distance = loadMapPoints("big.dem")
-    mapaSimple = simpleShading(mapa,mapHeight,mapWidth,distance)
-    drawMap(mapaSimple,"simpleMap.pdf")
-    plt.close()
+
+mapa, mapHeight, mapWidth, distance = loadMap("big.dem")
+mapaSimple = vectorShading(mapa,mapHeight,mapWidth,distance)
+drawMap(mapaSimple,"simpleMap.pdf")
+plt.close()
