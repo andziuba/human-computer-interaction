@@ -7,14 +7,6 @@ from matplotlib import colors
 def hsv2rgb(h, s, v):
     return colors.hsv_to_rgb((h, s, v))
 
-# poniżej znajdują się funkcje modelujące kolejne gradienty z zadania.
-# v to pozycja na osi ox: v jest od 0 do 1. Zewnetrzna funkcja wywołuje te metody podając
-# różne v i oczekując trójki RGB bądź HSV reprezentującej kolor. Np. (0,0,0) w RGB to kolor czarny. 
-# Należy uwikłać v w funkcję modelującą kolor. W tym celu dla kolejnych gradientów trzeba przyjąć 
-# sobie jakieś punkty charakterystyczne,
-# np. widzimy, że po lewej stronie (dla v = 0) powinien być kolor zielony a w środku niebieski (dla v = 0.5),
-# a wszystkie punkty pomiędzy należy interpolować liniowo (proporcjonalnie). 
-
 def gradient_rgb_bw(v):
     return (v, v, v)
 
@@ -24,42 +16,39 @@ def gradient_rgb_gbr(v):
     else:
         return (2*(v - 0.5), 0, 1 - 2*(v - 0.5))  # Od niebieskiego do czerwonego (1,0,0)
 
-#010 011 001 101 100
 def gradient_rgb_gbr_full(v):
     if v < 0.25:
-        # Od zielonego (0, 1, 0) do zielono-niebieskiego (0, 1, 1)
-        return (0, 1, 4*v)  # Różnicowanie niebieskiego w górę
+        # Od zielonego (0, 1, 0) do cyan (0, 1, 1)
+        return (0, 1, 4*v)
     elif v < 0.5:
-        # Od zielono-niebieskiego (0, 1, 1) do niebieskiego (0, 0, 1)
-        return (0, 1 - 4*(v - 0.25), 1)  # Zmniejszamy zielony, utrzymujemy niebieski
+        # Od cyan(0, 1, 1) do niebieskiego (0, 0, 1)
+        return (0, 1 - 4*(v - 0.25), 1)
     elif v < 0.75:
         # Od niebieskiego (0, 0, 1) do fioletowego (1, 0, 1)
-        return (4*(v - 0.5), 0, 1)  # Różnicowanie czerwonego w górę
+        return (4*(v - 0.5), 0, 1)
     else:
         # Od fioletowego (1, 0, 1) do czerwonego (1, 0, 0)
-        return (1, 0, 1 - 4*(v - 0.75))  # Zmniejszamy niebieski
+        return (1, 0, 1 - 4*(v - 0.75))
 
 
-#bialy niebieski zielony czerwony czarny
-#111 101 001 011 010 110 100 000
 def gradient_rgb_wb_custom(v):
     if v < 0.14:
-        # Od białego (1, 1, 1) do czerwonego (1, 0, 1)
-        return (1, 1 - 7.14*v, 1)  # Zmniejszamy zielony w miarę wzrostu v
+        # Od białego (1, 1, 1) do magenta (1, 0, 1)
+        return (1, 1 - 7.14*v, 1)
     elif v < 0.28:
-        # Od czerwonego (1, 0, 1) do niebieskiego (0, 0, 1)
-        return (1 - 7.14*(v - 0.14), 0, 1)  # Zmniejszamy czerwony w miarę wzrostu v, niebieski pozostaje na 1
+        # Od magenta (1, 0, 1) do niebieskiego (0, 0, 1)
+        return (1 - 7.14*(v - 0.14), 0, 1)
     elif v < 0.42:
-        # Od niebieskiego (0, 0, 1) do zielono-niebieskiego (0, 1, 1)
-        return (0, 7.14*(v - 0.28), 1)  # Zwiększamy zielony, niebieski jest na 1
+        # Od niebieskiego (0, 0, 1) do cyan (0, 1, 1)
+        return (0, 7.14*(v - 0.28), 1)
     elif v < 0.57:
-        # Od zielono-niebieskiego (0, 1, 1) do zielonego (0, 1, 0)
-        return (0, 1, 1 - 7.14*(v - 0.42))  # Zmniejszamy niebieski
+        # Od cyan (0, 1, 1) do zielonego (0, 1, 0)
+        return (0, 1, 1 - 7.14*(v - 0.42))
     elif v < 0.71:
-        # Od zielonego (0, 1, 0) do zielono-czerwonego (1, 1, 0)
-        return (7.14*(v - 0.57), 1, 0)  # Zwiększamy czerwony, zielony jest na 1
+        # Od zielonego (0, 1, 0) do pomaranczowego (1, 1, 0)
+        return (7.14*(v - 0.57), 1, 0)
     elif v < 0.85:
-        # Od zielono-czerwonego (1, 1, 0) do czerwonego (1, 0, 0)
+        # Od pomaranczowego (1, 1, 0) do czerwonego (1, 0, 0)
         return (1, 1 - 7.14*(v - 0.71), 0)  # Zmniejszamy zielony
     else:
         # Od czerwonego (1, 0, 0) do czarnego (0, 0, 0)
@@ -67,23 +56,22 @@ def gradient_rgb_wb_custom(v):
 
 
 def gradient_hsv_bw(v):
-    return hsv2rgb(0, 0, v)  # Wartość `v` wzrasta od 0 do 1
+    return hsv2rgb(0, 0, v)
 
 
-#120 240 0s
 def gradient_hsv_gbr(v):
-    h = (120 + (v * 240)) /360  # Zwiększa hue od 120° do 240°
-    return hsv2rgb(h, 1, 1)  # Maksymalne nasycenie i jasność
+    h = (120 + (v * 240)) /360  #hue od 120°(zielony) do 300°(czrwony)
+    return hsv2rgb(h, 1, 1)  # Maksymalne nasycenie i jasnosc
 
-#120 1
+
 def gradient_hsv_unknown(v):
-    h = (120 - (v * 120)) /360  # Zwiększa hue od 120° do 240°
-    return hsv2rgb(h, 0.5, 1)  # Maksymalne nasycenie i jasność
+    h = (120 - (v * 120)) /360
+    return hsv2rgb(h, 0.5, 1)
 
 
 def gradient_hsv_custom(v):
-    h = v  # Pełne koło kolorów w odwrotnym kierunku
-    s = 1 - v  # Nasycenie rośnie
+    h = v  #pelno kolo kolorow
+    s = 1 - v
     return hsv2rgb(h, s, 1)
 
 
@@ -93,7 +81,7 @@ def plot_color_gradients(gradients, names):
     #rc('font', family='serif', serif=['Times'], size=10)
     rc('legend', fontsize=10)
 
-    column_width_pt = 400         # Show in latex using \the\linewidth
+    column_width_pt = 400
     pt_per_inch = 72
     size = column_width_pt / pt_per_inch
 
@@ -102,7 +90,6 @@ def plot_color_gradients(gradients, names):
 
 
     for ax, gradient, name in zip(axes, gradients, names):
-        # Create image with two lines and draw gradient on it
         img = np.zeros((2, 1024, 3))
         for i, v in enumerate(np.linspace(0, 1, 1024)):
             img[:, i] = gradient(v)
