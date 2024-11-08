@@ -1,5 +1,4 @@
 import matplotlib
-# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import rc
 import numpy as np
@@ -9,23 +8,9 @@ import math as m
 def drawMap(mapa,nazwaPliku):
     fig = plt.figure()
     plt.imshow(mapa)
-    plt.show()
     fig.savefig(nazwaPliku)
 
 #wczytywanie danych
-def loadMapPoints(fileName):
-    with open(fileName) as file:
-        mapa = file.read().splitlines()
-    mapa = [i.split(' ') for i in mapa]
-    mapHeight= int(mapa[0][0]) #wysokosc mapy
-    mapWidth = int(mapa[0][1]) #szerokosc mapy
-    distance = int(mapa[0][2]) #dystans pomiedzy punktami
-    del mapa[0]
-    for i in range(len(mapa)):
-        del mapa[i][-1]
-        mapa[i] = [ float(point) for point in mapa[i]]
-    return mapa,mapWidth,mapHeight,distance
-
 def loadMap(plik):
     with open(plik, 'r') as f:
         mapWidth, mapHeight, distance = map(int, f.readline().split())
@@ -47,6 +32,7 @@ def hsv2rgb(h, s, v):
     x = c * (1 - abs((h / 60) % 2 - 1))
     m = v - c
 
+    #okreslenie wartosci na podstawie sektora hsv
     if 0 <= h < 60:
         r, g, b = c, x, 0
     elif 60 <= h < 120:
@@ -64,7 +50,7 @@ def hsv2rgb(h, s, v):
 
     return [r + m, g + m, b + m]
 
-
+#wektor normalny na powierzchni mapy
 def calculateVectors(mapa, i, j, mapWidth, distance, mainPoint):
     if i % 2 == 0:
         if j < mapWidth-1:
@@ -82,12 +68,12 @@ def calculateVectors(mapa, i, j, mapWidth, distance, mainPoint):
             thirdPoint = np.array([(i - 1) * distance, mapa[i - 1][j], j * distance])
 
 
-    normal = np.cross(secondPoint - mainPoint, thirdPoint - mainPoint) #wektor normalny powierzchni
+    normal = np.cross(secondPoint - mainPoint, thirdPoint - mainPoint) #wektor normalny powierzchni poprzez iloczyn wektorowy
     return normal
 
 def calculateVectorSun(mainPoint, disntance):
     sun = np.array([-distance, 50, -distance])
-    vectorToSun = sun - mainPoint
+    vectorToSun = sun - mainPoint #wektor kierujacy do slonca
 
     return vectorToSun
     
