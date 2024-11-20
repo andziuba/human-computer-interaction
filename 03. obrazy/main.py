@@ -34,8 +34,13 @@ def main():
         ax.axis('off')
         ax.imshow(img)
 
+        if len(contours) <= 2:
+            contour_width = 2
+        else:
+            contour_width = 1.25
+
         for j, contour in enumerate(contours):
-            ax.plot(contour[:, 1], contour[:, 0], linewidth=1.5, color=colors[j % len(colors)])
+            ax.plot(contour[:, 1], contour[:, 0], linewidth=contour_width, color=colors[j % len(colors)])
             center = (sum(contour[:, 1]) / len(contour[:, 1]), sum(contour[:, 0]) / len(contour[:, 0]))
             ax.scatter(center[0], center[1], color='white', s=10)
 
