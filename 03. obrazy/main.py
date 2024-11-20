@@ -12,7 +12,7 @@ img_paths = ['./planes/samolot00.jpg', './planes/samolot01.jpg', './planes/samol
              './planes/samolot14.jpg', './planes/samolot15.jpg', './planes/samolot16.jpg', './planes/samolot17.jpg',
              './planes/samolot18.jpg', './planes/samolot20.jpg']
 
-colors = ['#D62728', '#2CA02C', '#FF7F0E', '#8C564B', '#9467BD', '#17BECF', '#BCBD22', '#7F7F7F', '#E377C2']
+colors = ['#D62728', '#2CA02C', '#FF7F0E', '#8C564B', '#9467BD', '#17BECF', '#BCBD22', '#E377C2']
 
 
 def main():
@@ -40,7 +40,7 @@ def main():
             ax.scatter(center[0], center[1], color='white', s=10)
 
     plt.tight_layout()
-    plt.savefig('detected.jpg')
+    plt.savefig('detected.jpg', dpi=400)
     plt.show()
 
 
